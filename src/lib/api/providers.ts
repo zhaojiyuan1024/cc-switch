@@ -23,6 +23,7 @@ export interface SwitchResult {
 
 export interface OpenTerminalOptions {
   cwd?: string;
+  dangerous?: boolean;
 }
 
 export interface ClaudeDesktopStatus {
@@ -131,17 +132,19 @@ export const providersApi = {
    * 打开指定提供商的终端
    * 任何提供商都可以打开终端，不受是否为当前激活提供商的限制
    * 终端会使用该提供商特定的 API 配置，不影响全局设置
+   * dangerous=true 时使用 claude --dangerously-skip-permissions
    */
   async openTerminal(
     providerId: string,
     appId: AppId,
     options?: OpenTerminalOptions,
   ): Promise<boolean> {
-    const { cwd } = options ?? {};
+    const { cwd, dangerous } = options ?? {};
     return await invoke("open_provider_terminal", {
       providerId,
       app: appId,
       cwd,
+      dangerous,
     });
   },
 
