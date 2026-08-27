@@ -3886,7 +3886,11 @@ fn write_claude_config(
 
 /// macOS: 根据用户首选终端启动
 #[cfg(target_os = "macos")]
-fn launch_macos_terminal(config_file: &std::path::Path, cwd: Option<&Path>, dangerous: bool) -> Result<(), String> {
+fn launch_macos_terminal(
+    config_file: &std::path::Path,
+    cwd: Option<&Path>,
+    dangerous: bool,
+) -> Result<(), String> {
     use std::os::unix::fs::PermissionsExt;
 
     let preferred = crate::settings::get_preferred_terminal();
@@ -4282,7 +4286,11 @@ fn launch_macos_warp(script_file: &std::path::Path) -> Result<(), String> {
 
 /// Linux: 根据用户首选终端启动
 #[cfg(target_os = "linux")]
-fn launch_linux_terminal(config_file: &std::path::Path, cwd: Option<&Path>, dangerous: bool) -> Result<(), String> {
+fn launch_linux_terminal(
+    config_file: &std::path::Path,
+    cwd: Option<&Path>,
+    dangerous: bool,
+) -> Result<(), String> {
     use std::os::unix::fs::PermissionsExt;
     use std::process::Command;
 
@@ -4417,7 +4425,10 @@ fn launch_windows_terminal(
     let cwd_command = build_windows_cwd_command(cwd);
 
     let claude_cmd = if dangerous {
-        format!("claude --dangerously-skip-permissions --settings \"{}\"", config_path_for_batch)
+        format!(
+            "claude --dangerously-skip-permissions --settings \"{}\"",
+            config_path_for_batch
+        )
     } else {
         format!("claude --settings \"{}\"", config_path_for_batch)
     };

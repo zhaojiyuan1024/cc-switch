@@ -1172,7 +1172,9 @@ function App() {
                         activeApp === "claude" ? handleOpenTerminal : undefined
                       }
                       onOpenDangerousTerminal={
-                        activeApp === "claude" ? handleOpenDangerousTerminal : undefined
+                        activeApp === "claude"
+                          ? handleOpenDangerousTerminal
+                          : undefined
                       }
                       onCreate={() => setIsAddOpen(true)}
                       onSetAsDefault={

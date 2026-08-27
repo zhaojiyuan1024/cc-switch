@@ -724,7 +724,9 @@ export function ProviderCard({
                 onOpenTerminal ? () => onOpenTerminal(provider) : undefined
               }
               onOpenDangerousTerminal={
-                onOpenDangerousTerminal ? () => onOpenDangerousTerminal(provider) : undefined
+                onOpenDangerousTerminal
+                  ? () => onOpenDangerousTerminal(provider)
+                  : undefined
               }
               isAutoFailoverEnabled={isAutoFailoverEnabled}
               isInFailoverQueue={isInFailoverQueue}
