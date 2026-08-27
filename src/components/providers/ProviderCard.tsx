@@ -66,6 +66,7 @@ interface ProviderCardProps {
   onDuplicate: (provider: Provider) => void;
   onTest?: (provider: Provider) => void;
   onOpenTerminal?: (provider: Provider) => void;
+  onOpenDangerousTerminal?: (provider: Provider) => void;
   isTesting?: boolean;
   isProxyRunning: boolean;
   isProxyTakeover?: boolean; // 代理接管模式（Live配置已被接管，切换为热切换）
@@ -183,6 +184,7 @@ export function ProviderCard({
   onDuplicate,
   onTest,
   onOpenTerminal,
+  onOpenDangerousTerminal,
   isTesting,
   isProxyRunning,
   isProxyTakeover = false,
@@ -720,6 +722,9 @@ export function ProviderCard({
               onDisableOmo={handleDisableAnyOmo}
               onOpenTerminal={
                 onOpenTerminal ? () => onOpenTerminal(provider) : undefined
+              }
+              onOpenDangerousTerminal={
+                onOpenDangerousTerminal ? () => onOpenDangerousTerminal(provider) : undefined
               }
               isAutoFailoverEnabled={isAutoFailoverEnabled}
               isInFailoverQueue={isInFailoverQueue}

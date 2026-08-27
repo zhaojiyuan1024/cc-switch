@@ -9,6 +9,7 @@ import {
   Minus,
   Play,
   Plus,
+  ShieldOff,
   Terminal,
   Trash2,
   Zap,
@@ -47,6 +48,7 @@ interface ProviderActionsProps {
   onRemoveFromConfig?: () => void;
   onDisableOmo?: () => void;
   onOpenTerminal?: () => void;
+  onOpenDangerousTerminal?: () => void;
   isAutoFailoverEnabled?: boolean;
   isInFailoverQueue?: boolean;
   onToggleFailover?: (enabled: boolean) => void;
@@ -89,6 +91,7 @@ export function ProviderActions({
   onRemoveFromConfig,
   onDisableOmo,
   onOpenTerminal,
+  onOpenDangerousTerminal,
   isAutoFailoverEnabled = false,
   isInFailoverQueue = false,
   onToggleFailover,
@@ -384,6 +387,28 @@ export function ProviderActions({
         </Button>
       </span>
 
+      {onOpenTerminal && (
+        <Button
+          size="sm"
+          onClick={onOpenTerminal}
+          className="px-2.5 bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white"
+        >
+          <Terminal className="h-4 w-4 mr-1" />
+          {t("provider.openTerminal", "打开终端")}
+        </Button>
+      )}
+
+      {onOpenDangerousTerminal && (
+        <Button
+          size="sm"
+          onClick={onOpenDangerousTerminal}
+          className="px-2.5 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white"
+        >
+          <ShieldOff className="h-4 w-4 mr-1" />
+          {t("provider.openDangerousTerminal", "打开危险终端")}
+        </Button>
+      )}
+
       <div className="flex items-center gap-1">
         <Button
           size="icon"
@@ -443,21 +468,6 @@ export function ProviderActions({
         >
           <BarChart3 className="h-4 w-4" />
         </Button>
-
-        {onOpenTerminal && (
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={onOpenTerminal}
-            title={t("provider.openTerminal", "打开终端")}
-            className={cn(
-              iconButtonClass,
-              "hover:text-emerald-600 dark:hover:text-emerald-400",
-            )}
-          >
-            <Terminal className="h-4 w-4" />
-          </Button>
-        )}
 
         <Button
           size="icon"

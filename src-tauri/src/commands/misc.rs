@@ -1211,6 +1211,35 @@ fn build_provider_command_line(shell: &str, config_path: &str, cwd: Option<&Path
     )
 }
 
+/// 构建带 --dangerously-skip-permissions 的 provider 命令行
+#[cfg_attr(windows, allow(dead_code))]
+fn build_provider_command_line_dangerous(
+    shell: &str,
+    config_path: &str,
+    cwd: Option<&Path>,
+) -> String {
+    let claude_command = format!(
+        "claude --dangerously-skip-permissions --settings {}",
+        shell_single_quote(config_path)
+    );
+    let command = cwd
+        .map(|dir| {
+            format!(
+                "cd {} && {}",
+                shell_single_quote(&dir.to_string_lossy()),
+                claude_command
+            )
+        })
+        .unwrap_or(claude_command);
+
+    format!(
+        "{} {} {}",
+        shell_single_quote(shell),
+        provider_command_flag_for_shell(shell),
+        shell_single_quote(&command)
+    )
+}
+
 #[cfg_attr(windows, allow(dead_code))]
 fn provider_command_flag_for_shell(shell: &str) -> &'static str {
     match shell.rsplit('/').next().unwrap_or(shell) {
@@ -3686,6 +3715,7 @@ fn wsl_distro_from_path(path: &Path) -> Option<String> {
 ///
 /// 根据提供商配置的环境变量启动一个带有该提供商特定设置的终端
 /// 无需检查是否为当前激活的提供商，任何提供商都可以打开终端
+/// dangerous=true 时使用 claude --dangerously-skip-permissions
 #[allow(non_snake_case)]
 #[tauri::command]
 pub async fn open_provider_terminal(
@@ -3693,9 +3723,11 @@ pub async fn open_provider_terminal(
     app: String,
     #[allow(non_snake_case)] providerId: String,
     cwd: Option<String>,
+    dangerous: Option<bool>,
 ) -> Result<bool, String> {
     let app_type = AppType::from_str(&app).map_err(|e| e.to_string())?;
     let launch_cwd = resolve_launch_cwd(cwd)?;
+    let is_dangerous = dangerous.unwrap_or(false);
 
     // 获取提供商配置
     let providers = ProviderService::list(state.inner(), app_type.clone())
@@ -3710,7 +3742,7 @@ pub async fn open_provider_terminal(
     let env_vars = extract_env_vars_from_config(config, &app_type);
 
     // 根据平台启动终端，传入提供商ID用于生成唯一的配置文件名
-    launch_terminal_with_env(env_vars, &providerId, launch_cwd.as_deref())
+    launch_terminal_with_env(env_vars, &providerId, launch_cwd.as_deref(), is_dangerous)
         .map_err(|e| format!("启动终端失败: {e}"))?;
 
     Ok(true)
@@ -3793,10 +3825,12 @@ fn resolve_launch_cwd(cwd: Option<String>) -> Result<Option<PathBuf>, String> {
 
 /// 创建临时配置文件并启动 claude 终端
 /// 使用 --settings 参数传入提供商特定的 API 配置
+/// dangerous=true 时使用 --dangerously-skip-permissions
 fn launch_terminal_with_env(
     env_vars: Vec<(String, String)>,
     provider_id: &str,
     cwd: Option<&Path>,
+    dangerous: bool,
 ) -> Result<(), String> {
     let temp_dir = std::env::temp_dir();
     let config_file = temp_dir.join(format!(
@@ -3810,19 +3844,19 @@ fn launch_terminal_with_env(
 
     #[cfg(target_os = "macos")]
     {
-        launch_macos_terminal(&config_file, cwd)?;
+        launch_macos_terminal(&config_file, cwd, dangerous)?;
         Ok(())
     }
 
     #[cfg(target_os = "linux")]
     {
-        launch_linux_terminal(&config_file, cwd)?;
+        launch_linux_terminal(&config_file, cwd, dangerous)?;
         Ok(())
     }
 
     #[cfg(target_os = "windows")]
     {
-        launch_windows_terminal(&temp_dir, &config_file, cwd)?;
+        launch_windows_terminal(&temp_dir, &config_file, cwd, dangerous)?;
         Ok(())
     }
 
@@ -3852,7 +3886,7 @@ fn write_claude_config(
 
 /// macOS: 根据用户首选终端启动
 #[cfg(target_os = "macos")]
-fn launch_macos_terminal(config_file: &std::path::Path, cwd: Option<&Path>) -> Result<(), String> {
+fn launch_macos_terminal(config_file: &std::path::Path, cwd: Option<&Path>, dangerous: bool) -> Result<(), String> {
     use std::os::unix::fs::PermissionsExt;
 
     let preferred = crate::settings::get_preferred_terminal();
@@ -3865,7 +3899,11 @@ fn launch_macos_terminal(config_file: &std::path::Path, cwd: Option<&Path>) -> R
     let temp_dir = std::env::temp_dir();
     let script_file = temp_dir.join(format!("cc_switch_launcher_{}.sh", std::process::id()));
     let config_path = config_file.to_string_lossy();
-    let provider_command = build_provider_command_line(&shell, &config_path, cwd);
+    let provider_command = if dangerous {
+        build_provider_command_line_dangerous(&shell, &config_path, cwd)
+    } else {
+        build_provider_command_line(&shell, &config_path, cwd)
+    };
 
     // Write the shell script to a temp file
     // 脚本使用 POSIX sh 语法确保可移植性，exec 行切换到用户交互式 shell
@@ -4244,7 +4282,7 @@ fn launch_macos_warp(script_file: &std::path::Path) -> Result<(), String> {
 
 /// Linux: 根据用户首选终端启动
 #[cfg(target_os = "linux")]
-fn launch_linux_terminal(config_file: &std::path::Path, cwd: Option<&Path>) -> Result<(), String> {
+fn launch_linux_terminal(config_file: &std::path::Path, cwd: Option<&Path>, dangerous: bool) -> Result<(), String> {
     use std::os::unix::fs::PermissionsExt;
     use std::process::Command;
 
@@ -4270,7 +4308,11 @@ fn launch_linux_terminal(config_file: &std::path::Path, cwd: Option<&Path>) -> R
     let temp_dir = std::env::temp_dir();
     let script_file = temp_dir.join(format!("cc_switch_launcher_{}.sh", std::process::id()));
     let config_path = config_file.to_string_lossy();
-    let provider_command = build_provider_command_line(&shell, &config_path, cwd);
+    let provider_command = if dangerous {
+        build_provider_command_line_dangerous(&shell, &config_path, cwd)
+    } else {
+        build_provider_command_line(&shell, &config_path, cwd)
+    };
 
     let script_content = format!(
         r#"#!/usr/bin/env sh
@@ -4365,6 +4407,7 @@ fn launch_windows_terminal(
     temp_dir: &std::path::Path,
     config_file: &std::path::Path,
     cwd: Option<&Path>,
+    dangerous: bool,
 ) -> Result<(), String> {
     let preferred = crate::settings::get_preferred_terminal();
     let terminal = preferred.as_deref().unwrap_or("cmd");
@@ -4373,17 +4416,23 @@ fn launch_windows_terminal(
     let config_path_for_batch = escape_windows_batch_value(&config_file.to_string_lossy());
     let cwd_command = build_windows_cwd_command(cwd);
 
+    let claude_cmd = if dangerous {
+        format!("claude --dangerously-skip-permissions --settings \"{}\"", config_path_for_batch)
+    } else {
+        format!("claude --settings \"{}\"", config_path_for_batch)
+    };
+
     let content = format!(
         "@echo off
 {cwd_command}
 echo Using provider-specific claude config:
 echo {}
-claude --settings \"{}\"
+{}
 del \"{}\" >nul 2>&1
 del \"%~f0\" >nul 2>&1
 ",
         config_path_for_batch,
-        config_path_for_batch,
+        claude_cmd,
         config_path_for_batch,
         cwd_command = cwd_command,
     );
