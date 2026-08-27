@@ -62,6 +62,7 @@ interface ProviderListProps {
   onConfigureUsage?: (provider: Provider) => void;
   onOpenWebsite: (url: string) => void;
   onOpenTerminal?: (provider: Provider) => void;
+  onOpenDangerousTerminal?: (provider: Provider) => void;
   onCreate?: () => void;
   isLoading?: boolean;
   isProxyRunning?: boolean; // 代理服务运行状态
@@ -84,6 +85,7 @@ export function ProviderList({
   onConfigureUsage,
   onOpenWebsite,
   onOpenTerminal,
+  onOpenDangerousTerminal,
   onCreate,
   isLoading = false,
   isProxyRunning = false,
@@ -420,6 +422,7 @@ export function ProviderList({
                 onConfigureUsage={onConfigureUsage}
                 onOpenWebsite={onOpenWebsite}
                 onOpenTerminal={onOpenTerminal}
+                onOpenDangerousTerminal={onOpenDangerousTerminal}
                 onTest={handleTest}
                 isTesting={isChecking(provider.id)}
                 isProxyRunning={isProxyRunning}
@@ -559,6 +562,7 @@ interface SortableProviderCardProps {
   onConfigureUsage?: (provider: Provider) => void;
   onOpenWebsite: (url: string) => void;
   onOpenTerminal?: (provider: Provider) => void;
+  onOpenDangerousTerminal?: (provider: Provider) => void;
   onTest?: (provider: Provider) => void;
   isTesting: boolean;
   isProxyRunning: boolean;
@@ -590,6 +594,7 @@ function SortableProviderCard({
   onConfigureUsage,
   onOpenWebsite,
   onOpenTerminal,
+  onOpenDangerousTerminal,
   onTest,
   isTesting,
   isProxyRunning,
@@ -637,6 +642,7 @@ function SortableProviderCard({
         }
         onOpenWebsite={onOpenWebsite}
         onOpenTerminal={onOpenTerminal}
+        onOpenDangerousTerminal={onOpenDangerousTerminal}
         onTest={onTest}
         isTesting={isTesting}
         isProxyRunning={isProxyRunning}

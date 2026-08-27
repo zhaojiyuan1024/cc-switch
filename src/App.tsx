@@ -827,6 +827,33 @@ function App() {
     }
   };
 
+  const handleOpenDangerousTerminal = async (provider: Provider) => {
+    try {
+      const selectedDir = await settingsApi.pickDirectory();
+      if (!selectedDir) {
+        return;
+      }
+
+      await providersApi.openTerminal(provider.id, activeApp, {
+        cwd: selectedDir,
+        dangerous: true,
+      });
+      toast.success(
+        t("provider.dangerousTerminalOpened", {
+          defaultValue: "危险终端已打开",
+        }),
+      );
+    } catch (error) {
+      console.error("[App] Failed to open dangerous terminal", error);
+      const errorMessage = extractErrorMessage(error);
+      toast.error(
+        t("provider.dangerousTerminalOpenFailed", {
+          defaultValue: "打开危险终端失败",
+        }) + (errorMessage ? `: ${errorMessage}` : ""),
+      );
+    }
+  };
+
   const handleImportSuccess = async () => {
     try {
       await queryClient.invalidateQueries({
@@ -1018,6 +1045,9 @@ function App() {
                       onOpenWebsite={handleOpenWebsite}
                       onOpenTerminal={
                         activeApp === "claude" ? handleOpenTerminal : undefined
+                      }
+                      onOpenDangerousTerminal={
+                        activeApp === "claude" ? handleOpenDangerousTerminal : undefined
                       }
                       onCreate={() => setIsAddOpen(true)}
                       onSetAsDefault={
